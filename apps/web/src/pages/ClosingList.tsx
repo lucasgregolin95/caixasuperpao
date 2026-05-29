@@ -100,7 +100,8 @@ export const ClosingList: React.FC = () => {
   const handlePrint = (id: string) => {
     // Abre a visualização em HTML para impressão do navegador
     const host = window.location.hostname;
-    const baseURL = import.meta.env.VITE_API_URL || `http://${host}:3000/api`;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || /^[0-9.]+$/.test(host) || host.endsWith('.local');
+    const baseURL = import.meta.env.VITE_API_URL || (isLocal ? `http://${host}:3000/api` : 'https://caixasuperpao-api-md56.vercel.app/api');
     const token = localStorage.getItem('superbom_access_token');
     
     // Abre em nova guia passando o token na query ou via janela

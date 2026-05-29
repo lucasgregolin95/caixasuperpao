@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const host = window.location.hostname;
-const baseURL = import.meta.env.VITE_API_URL || `http://${host}:3000/api`;
+const isLocal = host === 'localhost' || host === '127.0.0.1' || /^[0-9.]+$/.test(host) || host.endsWith('.local');
+const baseURL = import.meta.env.VITE_API_URL || (isLocal ? `http://${host}:3000/api` : 'https://caixasuperpao-api-md56.vercel.app/api');
 
 export const api = axios.create({
   baseURL,
