@@ -135,20 +135,23 @@ export const ClosingForm: React.FC = () => {
   // Sugestão de Sangria Inteligente
   const getSangriaSuggestion = () => {
     const denominations = [
-      { type: 'coin', label: 'Moeda de R$ 0,05', value: 0.05, key: 'c005' },
-      { type: 'coin', label: 'Moeda de R$ 0,10', value: 0.10, key: 'c010' },
-      { type: 'coin', label: 'Moeda de R$ 0,25', value: 0.25, key: 'c025' },
-      { type: 'coin', label: 'Moeda de R$ 0,50', value: 0.50, key: 'c050' },
-      { type: 'coin', label: 'Moeda de R$ 1,00', value: 1.00, key: 'c100' },
-      { type: 'bill', label: 'Cédula de R$ 2,00', value: 2, key: 'b2' },
-      { type: 'bill', label: 'Cédula de R$ 5,00', value: 5, key: 'b5' },
-      { type: 'bill', label: 'Cédula de R$ 10,00', value: 10, key: 'b10' },
-      { type: 'bill', label: 'Cédula de R$ 20,00', value: 20, key: 'b20' },
-      { type: 'bill', label: 'Cédula de R$ 50,00', value: 50, key: 'b50' },
-      { type: 'bill', label: 'Cédula de R$ 100,00', value: 100, key: 'b100' },
+      { type: 'coin', label: 'Moeda de R$ 0,05', value: 0.05, key: 'c005', cents: 5 },
+      { type: 'coin', label: 'Moeda de R$ 0,10', value: 0.10, key: 'c010', cents: 10 },
+      { type: 'coin', label: 'Moeda de R$ 0,25', value: 0.25, key: 'c025', cents: 25 },
+      { type: 'coin', label: 'Moeda de R$ 0,50', value: 0.50, key: 'c050', cents: 50 },
+      { type: 'coin', label: 'Moeda de R$ 1,00', value: 1.00, key: 'c100', cents: 100 },
+      { type: 'bill', label: 'Cédula de R$ 2,00', value: 2.00, key: 'b2', cents: 200 },
+      { type: 'bill', label: 'Cédula de R$ 5,00', value: 5.00, key: 'b5', cents: 500 },
+      { type: 'bill', label: 'Cédula de R$ 10,00', value: 10.00, key: 'b10', cents: 1000 },
+      { type: 'bill', label: 'Cédula de R$ 20,00', value: 20.00, key: 'b20', cents: 2000 },
+      { type: 'bill', label: 'Cédula de R$ 50,00', value: 50.00, key: 'b50', cents: 5000 },
+      { type: 'bill', label: 'Cédula de R$ 100,00', value: 100.00, key: 'b100', cents: 10000 },
     ] as const;
 
-    if (totalCash <= 100) {
+    const totalCashCents = Math.round(totalCash * 100);
+
+    // Se o dinheiro total em caixa for <= R$ 100, mantém tudo e a sangria é zero
+    if (totalCashCents <= 10000) {
       const itemsToKeep = denominations
         .map((d) => {
           const qty = d.type === 'coin' ? coins[d.key as keyof typeof coins] : bills[d.key as keyof typeof bills];
@@ -163,29 +166,136 @@ export const ClosingForm: React.FC = () => {
       };
     }
 
-    let currentKeepSum = 0;
     const keepCounts: Record<string, number> = {};
+    const remainingCounts: Record<string, number> = {};
 
-    // Algoritmo guloso para atingir NO MÍNIMO R$ 100,00 para troco
-    for (const denom of denominations) {
-      const available = denom.type === 'coin'
-        ? coins[denom.key as keyof typeof coins]
-        : bills[denom.key as keyof typeof bills];
-
-      if (available === 0) continue;
-
-      // Adiciona unidade por unidade até atingir ou ultrapassar 100
-      for (let i = 0; i < available; i++) {
-        if (currentKeepSum >= 100) break;
-        
-        keepCounts[denom.key] = (keepCounts[denom.key] || 0) + 1;
-        currentKeepSum = Number((currentKeepSum + denom.value).toFixed(2));
-      }
-
-      if (currentKeepSum >= 100) break;
+    for (const d of denominations) {
+      remainingCounts[d.key] = d.type === 'coin'
+        ? coins[d.key as keyof typeof coins]
+        : bills[d.key as keyof typeof bills];
+      keepCounts[d.key] = 0;
     }
 
-    const withdrawalTotal = Number((totalCash - currentKeepSum).toFixed(2));
+    // Passo 1: Reservar pelo menos 1 unidade de cada denominação preferencial se disponível
+    // Preferenciais: R$ 50, 10, 5, 2 (Notas) e R$ 1,00, 0.50, 0.25, 0.10, 0.05 (Moedas)
+    const preferredKeys = ['b50', 'b10', 'b5', 'b2', 'c100', 'c050', 'c025', 'c010', 'c005'];
+    for (const key of preferredKeys) {
+      if (remainingCounts[key] > 0) {
+        keepCounts[key] = 1;
+        remainingCounts[key] -= 1;
+      }
+    }
+
+    // Calcular o saldo atual reservado no Passo 1
+    let currentKeepCents = 0;
+    for (const d of denominations) {
+      currentKeepCents += keepCounts[d.key] * d.cents;
+    }
+
+    // Se por acaso já alcançamos ou passamos de 100, terminamos aqui. Caso contrário, precisamos buscar o restante.
+    if (currentKeepCents < 10000) {
+      const neededCents = 10000 - currentKeepCents;
+
+      // Planificar os itens restantes em uma lista
+      interface FlattenedItem {
+        key: string;
+        cents: number;
+      }
+      const remainingItems: FlattenedItem[] = [];
+      for (const d of denominations) {
+        const qty = remainingCounts[d.key] || 0;
+        for (let i = 0; i < qty; i++) {
+          remainingItems.push({ key: d.key, cents: d.cents });
+        }
+      }
+
+      const totalRemainingCents = remainingItems.reduce((acc, item) => acc + item.cents, 0);
+
+      if (totalRemainingCents <= neededCents) {
+        // Se tudo o que sobrou não é suficiente para atingir R$ 100, mantemos tudo
+        for (const item of remainingItems) {
+          keepCounts[item.key] = (keepCounts[item.key] || 0) + 1;
+        }
+      } else {
+        // Resolver usando Programação Dinâmica (Knapsack para Subset Sum >= target)
+        // Limite máximo tolerado de overshoot (além de 100 reais, toleramos até 100 reais adicionais para busca)
+        const maxLimit = neededCents + 10000;
+        
+        interface DPEntry {
+          achievable: boolean;
+          itemCount: number;
+          parentIndex: number;
+          prevSum: number;
+        }
+
+        const dp: DPEntry[] = Array.from({ length: maxLimit + 1 }, () => ({
+          achievable: false,
+          itemCount: 0,
+          parentIndex: -1,
+          prevSum: -1,
+        }));
+
+        dp[0] = { achievable: true, itemCount: 0, parentIndex: -1, prevSum: -1 };
+
+        // Processar cada item disponível
+        for (let idx = 0; idx < remainingItems.length; idx++) {
+          const { cents } = remainingItems[idx];
+          // Ordem reversa para evitar reuso do mesmo item físico
+          for (let i = maxLimit; i >= cents; i--) {
+            if (dp[i - cents].achievable) {
+              const newCount = dp[i - cents].itemCount + 1;
+              // Preferimos atingir a soma, ou se já atingida, preferimos a combinação com MAIS itens (menores denominações)
+              if (!dp[i].achievable || newCount > dp[i].itemCount) {
+                dp[i] = {
+                  achievable: true,
+                  itemCount: newCount,
+                  parentIndex: idx,
+                  prevSum: i - cents,
+                };
+              }
+            }
+          }
+        }
+
+        // Achar a menor soma S >= neededCents que seja alcançável
+        let chosenSum = -1;
+        for (let i = neededCents; i <= maxLimit; i++) {
+          if (dp[i].achievable) {
+            chosenSum = i;
+            break;
+          }
+        }
+
+        // Reconstrói a solução
+        if (chosenSum !== -1) {
+          let curr = chosenSum;
+          while (curr > 0) {
+            const entry = dp[curr];
+            const item = remainingItems[entry.parentIndex];
+            keepCounts[item.key] = (keepCounts[item.key] || 0) + 1;
+            curr = entry.prevSum;
+          }
+        } else {
+          // Fallback seguro usando algoritmo guloso
+          let tempSum = 0;
+          for (const item of remainingItems) {
+            if (tempSum >= neededCents) break;
+            keepCounts[item.key] = (keepCounts[item.key] || 0) + 1;
+            tempSum += item.cents;
+          }
+        }
+      }
+    }
+
+    // Calcular valores finais sugeridos
+    let keepTotalCents = 0;
+    for (const d of denominations) {
+      keepTotalCents += keepCounts[d.key] * d.cents;
+    }
+
+    const finalKeepTotal = Number((keepTotalCents / 100).toFixed(2));
+    const withdrawalTotal = Number((totalCash - finalKeepTotal).toFixed(2));
+    
     const itemsToKeep = denominations
       .map((d) => ({
         label: d.label,
@@ -195,7 +305,7 @@ export const ClosingForm: React.FC = () => {
       .filter((item) => item.qty > 0);
 
     return {
-      keepTotal: currentKeepSum,
+      keepTotal: finalKeepTotal,
       withdrawalTotal: withdrawalTotal >= 0 ? withdrawalTotal : 0,
       itemsToKeep,
     };
