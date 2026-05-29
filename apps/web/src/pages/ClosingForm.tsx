@@ -49,6 +49,7 @@ export const ClosingForm: React.FC = () => {
   const [withdrawalValue, setWithdrawalValue] = useState<number>(0);
   const [adjustmentValue, setAdjustmentValue] = useState<number>(0);
   const [adjustmentDescription, setAdjustmentDescription] = useState('');
+  const [isSuggestionApplied, setIsSuggestionApplied] = useState(false);
 
   // Carregar dados se for Edição de Rascunho
   useEffect(() => {
@@ -165,7 +166,7 @@ export const ClosingForm: React.FC = () => {
     let currentKeepSum = 0;
     const keepCounts: Record<string, number> = {};
 
-    // Algoritmo guloso
+    // Algoritmo guloso para atingir NO MÍNIMO R$ 100,00 para troco
     for (const denom of denominations) {
       const available = denom.type === 'coin'
         ? coins[denom.key as keyof typeof coins]
@@ -173,43 +174,15 @@ export const ClosingForm: React.FC = () => {
 
       if (available === 0) continue;
 
-      const needed = 100 - currentKeepSum;
-      if (needed <= 0) break;
-
-      const maxToTake = Math.floor(needed / denom.value);
-      const taken = Math.min(available, maxToTake);
-
-      if (taken > 0) {
-        keepCounts[denom.key] = taken;
-        currentKeepSum = Number((currentKeepSum + taken * denom.value).toFixed(2));
-      }
-    }
-
-    // Refinamento: se sobrar uma denominação que nos aproxima mais do alvo de R$ 100
-    if (currentKeepSum < 100) {
-      let bestExtraDenom: typeof denominations[number] | null = null;
-      let bestDiff = 100 - currentKeepSum;
-
-      for (const denom of denominations) {
-        const available = denom.type === 'coin'
-          ? coins[denom.key as keyof typeof coins]
-          : bills[denom.key as keyof typeof bills];
-        const kept = keepCounts[denom.key] || 0;
-
-        if (available > kept) {
-          const newSum = currentKeepSum + denom.value;
-          const diff = Math.abs(100 - newSum);
-          if (diff < bestDiff) {
-            bestDiff = diff;
-            bestExtraDenom = denom;
-          }
-        }
+      // Adiciona unidade por unidade até atingir ou ultrapassar 100
+      for (let i = 0; i < available; i++) {
+        if (currentKeepSum >= 100) break;
+        
+        keepCounts[denom.key] = (keepCounts[denom.key] || 0) + 1;
+        currentKeepSum = Number((currentKeepSum + denom.value).toFixed(2));
       }
 
-      if (bestExtraDenom) {
-        keepCounts[bestExtraDenom.key] = (keepCounts[bestExtraDenom.key] || 0) + 1;
-        currentKeepSum = Number((currentKeepSum + bestExtraDenom.value).toFixed(2));
-      }
+      if (currentKeepSum >= 100) break;
     }
 
     const withdrawalTotal = Number((totalCash - currentKeepSum).toFixed(2));
@@ -223,14 +196,23 @@ export const ClosingForm: React.FC = () => {
 
     return {
       keepTotal: currentKeepSum,
-      withdrawalTotal,
+      withdrawalTotal: withdrawalTotal >= 0 ? withdrawalTotal : 0,
       itemsToKeep,
     };
   };
 
   const suggestion = getSangriaSuggestion();
 
+  // Sincronização automática em tempo real se o botão foi acionado e os valores de notas mudarem
+  useEffect(() => {
+    if (isSuggestionApplied) {
+      setWithdrawalValue(suggestion.withdrawalTotal);
+      setAdjustmentDescription(`Sangria automática de fechamento. Troco reservado em caixa: R$ ${suggestion.keepTotal.toFixed(2)}.`);
+    }
+  }, [suggestion.withdrawalTotal, suggestion.keepTotal, isSuggestionApplied]);
+
   const handleApplySuggestion = () => {
+    setIsSuggestionApplied(true);
     setWithdrawalValue(suggestion.withdrawalTotal);
     setAdjustmentDescription(`Sangria automática de fechamento. Troco reservado em caixa: R$ ${suggestion.keepTotal.toFixed(2)}.`);
     showToast('Sugestão de sangria aplicada com sucesso!');
@@ -512,9 +494,13 @@ export const ClosingForm: React.FC = () => {
               <button
                 type="button"
                 onClick={handleApplySuggestion}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 hover:border-indigo-600 font-bold rounded-xl text-xs transition active:scale-[0.98]"
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 font-bold rounded-xl text-xs transition active:scale-[0.98] ${
+                  isSuggestionApplied
+                    ? 'bg-emerald-500/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                    : 'bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 hover:border-indigo-600'
+                }`}
               >
-                Aplicar Sugestão de Sangria
+                {isSuggestionApplied ? '✓ Sugestão Aplicada (Sincronizada)' : 'Aplicar Sugestão de Sangria'}
               </button>
             </div>
           </div>
@@ -575,7 +561,10 @@ export const ClosingForm: React.FC = () => {
                 step="0.01"
                 placeholder="0.00"
                 value={withdrawalValue === 0 ? '' : withdrawalValue}
-                onChange={(e) => handleDecimalInput(e.target.value, setWithdrawalValue)}
+                onChange={(e) => {
+                  setIsSuggestionApplied(false);
+                  handleDecimalInput(e.target.value, setWithdrawalValue);
+                }}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-rose-400 focus:border-rose-500 focus:outline-none"
               />
             </div>
@@ -597,7 +586,10 @@ export const ClosingForm: React.FC = () => {
               type="text"
               placeholder="Ex: R$ 50 para troco ou sangria de segurança"
               value={adjustmentDescription}
-              onChange={(e) => setAdjustmentDescription(e.target.value)}
+              onChange={(e) => {
+                setIsSuggestionApplied(false);
+                setAdjustmentDescription(e.target.value);
+              }}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-200 focus:border-indigo-500 focus:outline-none"
             />
           </div>
