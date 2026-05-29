@@ -7,7 +7,7 @@ import { Shift, CashClosingInput, ClosingStatus, UserRole } from '@superbom/shar
 import { Save, Send, AlertTriangle, ArrowLeft, Loader2, Info, Sparkles } from 'lucide-react';
 
 export const ClosingForm: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>(); // Se presente, estamos editando
 
@@ -16,6 +16,7 @@ export const ClosingForm: React.FC = () => {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isShiftChangeModalOpen, setIsShiftChangeModalOpen] = useState(false);
 
   // Campos principais
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -388,6 +389,12 @@ export const ClosingForm: React.FC = () => {
     }
   };
 
+  const handleShiftChangeLogout = async () => {
+    setIsShiftChangeModalOpen(false);
+    await logout();
+    navigate('/login');
+  };
+
   const handleSubmitClosing = async () => {
     setIsConfirmModalOpen(false);
     setError('');
@@ -408,7 +415,10 @@ export const ClosingForm: React.FC = () => {
 
       await api.post(`/closings/${closingId}/submit`);
       showToast('Fechamento de caixa enviado com sucesso!');
-      setTimeout(() => navigate('/closings'), 1500);
+      setTimeout(() => {
+        setIsShiftChangeModalOpen(true);
+        setSubmitting(false);
+      }, 1000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao enviar fechamento.');
       setSubmitting(false);
@@ -796,6 +806,32 @@ export const ClosingForm: React.FC = () => {
                 className="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-indigo-600/10"
               >
                 Confirmar Envio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Troca de Operador (Turno) obrigatório */}
+      {isShiftChangeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+          <div className="bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl max-w-md w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-amber-950 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-800 animate-pulse">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-xl font-black text-slate-100">Troca de Operador / Turno</h3>
+            <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+              O fechamento de caixa foi registrado e transmitido à gerência com sucesso!
+            </p>
+            <p className="text-xs font-semibold text-amber-400 mt-2 bg-amber-950/40 py-2 px-3 rounded-xl border border-amber-800/30">
+              Atenção: Para segurança operacional e início de um novo turno, é obrigatório realizar o logout para que o próximo operador se autentique.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={handleShiftChangeLogout}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-indigo-600/20 active:scale-95"
+              >
+                Efetuar Logout para Próximo Operador
               </button>
             </div>
           </div>

@@ -6,33 +6,56 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Iniciando o seed do banco de dados...');
 
+  console.log('Migrando domínios de e-mail antigos...');
+  const oldUsers = await prisma.user.findMany({
+    where: {
+      email: {
+        endsWith: '@superbom.local'
+      }
+    }
+  });
+
+  for (const ou of oldUsers) {
+    const newEmail = ou.email.replace('@superbom.local', '@superpao.local');
+    const exists = await prisma.user.findUnique({ where: { email: newEmail } });
+    if (!exists) {
+      await prisma.user.update({
+        where: { id: ou.id },
+        data: { email: newEmail }
+      });
+      console.log(`Email de usuário migrado: ${ou.email} -> ${newEmail}`);
+    } else {
+      await prisma.user.delete({ where: { id: ou.id } }).catch(() => {});
+    }
+  }
+
   const users = [
     {
-      email: 'admin@superbom.local',
+      email: 'admin@superpao.local',
       name: 'Administrador Principal',
       password: 'Admin@123',
       role: 'ADMIN',
     },
     {
-      email: 'gerente@superbom.local',
+      email: 'gerente@superpao.local',
       name: 'Gerente Operacional',
       password: 'Gerente@123',
       role: 'GERENTE',
     },
     {
-      email: 'supervisor@superbom.local',
+      email: 'supervisor@superpao.local',
       name: 'Supervisor de Turno',
       password: 'Supervisor@123',
       role: 'SUPERVISOR',
     },
     {
-      email: 'caixa1@superbom.local',
+      email: 'caixa1@superpao.local',
       name: 'Operador Caixa 1',
       password: 'Caixa@123',
       role: 'CAIXA',
     },
     {
-      email: 'caixa2@superbom.local',
+      email: 'caixa2@superpao.local',
       name: 'Operador Caixa 2',
       password: 'Caixa@123',
       role: 'CAIXA',

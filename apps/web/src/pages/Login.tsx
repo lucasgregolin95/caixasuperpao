@@ -80,7 +80,7 @@ export const Login: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@superbom.local"
+                placeholder="usuario@superpao.local"
                 className="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl focus:border-indigo-500 text-slate-100 placeholder-slate-600 font-medium transition focus:outline-none"
               />
             </div>
