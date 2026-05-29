@@ -177,8 +177,9 @@ export const ClosingForm: React.FC = () => {
     }
 
     // Passo 1: Reservar pelo menos 1 unidade de cada denominação preferencial se disponível
-    // Preferenciais: R$ 50, 10, 5, 2 (Notas) e R$ 1,00, 0.50, 0.25, 0.10, 0.05 (Moedas)
-    const preferredKeys = ['b50', 'b10', 'b5', 'b2', 'c100', 'c050', 'c025', 'c010', 'c005'];
+    // Preferenciais: R$ 10, 5, 2 (Notas) e R$ 1,00, 0.50, 0.25, 0.10, 0.05 (Moedas)
+    // Evitamos pré-reservar R$ 50,00 e 100,00 para priorizar o troco miúdo.
+    const preferredKeys = ['b10', 'b5', 'b2', 'c100', 'c050', 'c025', 'c010', 'c005'];
     for (const key of preferredKeys) {
       if (remainingCounts[key] > 0) {
         keepCounts[key] = 1;
@@ -221,34 +222,43 @@ export const ClosingForm: React.FC = () => {
         // Limite máximo tolerado de overshoot (além de 100 reais, toleramos até 100 reais adicionais para busca)
         const maxLimit = neededCents + 10000;
         
+        // Função de peso de preferência para evitar notas grandes
+        const getPreferenceWeight = (key: string) => {
+          if (key === 'b100') return 1;    // Evitar ao máximo cédula de 100
+          if (key === 'b50') return 5;     // Evitar cédula de 50
+          if (key === 'b20') return 25;    // Evitar um pouco cédula de 20 (preferir menores)
+          return 100;                      // Altamente preferencial (2, 5, 10 e moedas)
+        };
+
         interface DPEntry {
           achievable: boolean;
-          itemCount: number;
+          totalWeight: number;
           parentIndex: number;
           prevSum: number;
         }
 
         const dp: DPEntry[] = Array.from({ length: maxLimit + 1 }, () => ({
           achievable: false,
-          itemCount: 0,
+          totalWeight: 0,
           parentIndex: -1,
           prevSum: -1,
         }));
 
-        dp[0] = { achievable: true, itemCount: 0, parentIndex: -1, prevSum: -1 };
+        dp[0] = { achievable: true, totalWeight: 0, parentIndex: -1, prevSum: -1 };
 
         // Processar cada item disponível
         for (let idx = 0; idx < remainingItems.length; idx++) {
-          const { cents } = remainingItems[idx];
+          const { key, cents } = remainingItems[idx];
+          const weight = getPreferenceWeight(key);
           // Ordem reversa para evitar reuso do mesmo item físico
           for (let i = maxLimit; i >= cents; i--) {
             if (dp[i - cents].achievable) {
-              const newCount = dp[i - cents].itemCount + 1;
-              // Preferimos atingir a soma, ou se já atingida, preferimos a combinação com MAIS itens (menores denominações)
-              if (!dp[i].achievable || newCount > dp[i].itemCount) {
+              const newWeight = dp[i - cents].totalWeight + weight;
+              // Preferimos atingir a soma, ou se já atingida, preferimos a combinação com MAIOR peso de preferência
+              if (!dp[i].achievable || newWeight > dp[i].totalWeight) {
                 dp[i] = {
                   achievable: true,
-                  itemCount: newCount,
+                  totalWeight: newWeight,
                   parentIndex: idx,
                   prevSum: i - cents,
                 };
