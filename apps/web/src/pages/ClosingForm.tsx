@@ -177,9 +177,9 @@ export const ClosingForm: React.FC = () => {
     }
 
     // Passo 1: Reservar pelo menos 1 unidade de cada denominação preferencial se disponível
-    // Preferenciais: R$ 10, 5, 2 (Notas) e R$ 1,00, 0.50, 0.25, 0.10, 0.05 (Moedas)
+    // Preferenciais: R$ 20, 10, 5, 2 (Notas) e R$ 1,00, 0.50, 0.25, 0.10, 0.05 (Moedas)
     // Evitamos pré-reservar R$ 50,00 e 100,00 para priorizar o troco miúdo.
-    const preferredKeys = ['b10', 'b5', 'b2', 'c100', 'c050', 'c025', 'c010', 'c005'];
+    const preferredKeys = ['b20', 'b10', 'b5', 'b2', 'c100', 'c050', 'c025', 'c010', 'c005'];
     for (const key of preferredKeys) {
       if (remainingCounts[key] > 0) {
         keepCounts[key] = 1;
@@ -456,7 +456,7 @@ export const ClosingForm: React.FC = () => {
       {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block">Padaria Super Bom</span>
+          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block">Padaria Super Pão</span>
           <h1 className="text-xl md:text-2xl font-black text-slate-100">
             {id ? 'Editar Fechamento de Caixa' : 'Novo Fechamento de Caixa'}
           </h1>

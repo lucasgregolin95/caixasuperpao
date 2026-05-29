@@ -119,7 +119,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
             S
           </div>
-          <span className="text-lg font-black text-slate-100 tracking-tight">Super Bom <span className="text-indigo-400 font-medium">Caixa</span></span>
+          <span className="text-lg font-black text-slate-100 tracking-tight">Super Pão <span className="text-indigo-400 font-medium">Caixa</span></span>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {allowedMenuItems.map((item) => {
@@ -159,7 +159,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             <div className="flex items-center justify-between px-6 h-16 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white">S</div>
-                <span className="text-lg font-black text-slate-100">Super Bom</span>
+                <span className="text-lg font-black text-slate-100">Super Pão</span>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(false)}
@@ -215,7 +215,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             </button>
             <div className="flex items-center gap-2 lg:hidden">
               <div className="w-7 h-7 rounded bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">S</div>
-              <span className="text-base font-black text-slate-200 tracking-tight">Super Bom</span>
+              <span className="text-base font-black text-slate-200 tracking-tight">Super Pão</span>
             </div>
             <div className="hidden lg:block">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest block leading-none">Padaria 24h</span>

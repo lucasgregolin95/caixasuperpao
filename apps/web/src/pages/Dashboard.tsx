@@ -66,7 +66,7 @@ export const Dashboard: React.FC = () => {
         <div>
           <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest block mb-1">Painel Operacional</span>
           <h1 className="text-2xl md:text-3xl font-black text-slate-100">{getGreeting()}, {user?.name}!</h1>
-          <p className="text-sm text-slate-400 mt-1">Acompanhe as contagens de caixa da padaria Super Bom.</p>
+          <p className="text-sm text-slate-400 mt-1">Acompanhe as contagens de caixa da padaria Super Pão.</p>
         </div>
         <div className="px-4 py-2 bg-indigo-950/50 border border-indigo-800/50 rounded-2xl flex items-center gap-2.5">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />

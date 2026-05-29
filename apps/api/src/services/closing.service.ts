@@ -89,7 +89,7 @@ export class ClosingService {
 
     const closing = await prisma.cashClosing.create({
       data: {
-        bakery: input.bakery || 'Super Bom',
+        bakery: input.bakery || 'Super Pão',
         date: targetDate,
         shift: input.shift,
         cashNumber: input.cashNumber,

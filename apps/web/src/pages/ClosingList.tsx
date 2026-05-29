@@ -149,7 +149,7 @@ export const ClosingList: React.FC = () => {
 
       <div className="flex justify-between items-center mb-6">
         <div>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Padaria Super Bom</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Padaria Super Pão</span>
           <h1 className="text-xl md:text-2xl font-black text-slate-100">Histórico de Fechamentos</h1>
         </div>
         <button

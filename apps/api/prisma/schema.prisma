@@ -34,7 +34,7 @@ model RefreshToken {
 
 model CashClosing {
   id                    String     @id @default(uuid())
-  bakery                String     @default("Super Bom")
+  bakery                String     @default("Super Pão")
   date                  DateTime
   shift                 String     // MANHA, TARDE, NOITE
   cashNumber            Int        // 1 ou 2 (ou mais)

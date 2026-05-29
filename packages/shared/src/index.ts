@@ -35,7 +35,7 @@ export interface DenominationCount {
 }
 
 export interface CashClosingInput {
-  bakery?: string; // padrão "Super Bom"
+  bakery?: string; // padrão "Super Pão"
   date: string; // ISO String ou YYYY-MM-DD
   shift: Shift;
   cashNumber: number; // 1 ou 2

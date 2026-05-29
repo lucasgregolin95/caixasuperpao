@@ -52,9 +52,9 @@ export const Login: React.FC = () => {
         {/* Logo / Título */}
         <div className="text-center mb-8">
           <div className="inline-flex w-14 h-14 bg-indigo-600 rounded-2xl items-center justify-center font-black text-2xl text-white shadow-xl shadow-indigo-600/30 mb-4">
-            SB
+            SP
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-100">Super Bom</h1>
+          <h1 className="text-2xl font-black tracking-tight text-slate-100">Super Pão</h1>
           <p className="text-sm text-slate-500 font-medium mt-1">Fechamento de Caixa Diário</p>
         </div>
 

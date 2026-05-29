@@ -14,10 +14,10 @@ export class EmailService {
   });
 
   static async sendNotificationEmail(to: string, subject: string, htmlContent: string) {
-    const from = process.env.SMTP_FROM || 'fechamento@superbom.local';
+    const from = process.env.SMTP_FROM || 'fechamento@superpao.local';
     try {
       const info = await this.transporter.sendMail({
-        from: `"Super Bom Caixa" <${from}>`,
+        from: `"Super Pão Caixa" <${from}>`,
         to,
         subject,
         html: htmlContent,

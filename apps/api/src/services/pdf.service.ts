@@ -33,7 +33,7 @@ export class PdfService {
     <!-- Cabeçalho -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100 pb-6 mb-6">
       <div>
-        <h1 class="text-3xl font-black text-indigo-900 tracking-tight">Super Bom</h1>
+        <h1 class="text-3xl font-black text-indigo-900 tracking-tight">Super Pão</h1>
         <p class="text-gray-500 font-medium">Controle de Fechamento de Caixa Diário</p>
       </div>
       <div class="mt-4 md:mt-0 text-left md:text-right">
@@ -170,7 +170,7 @@ export class PdfService {
 
     <!-- Rodapé de Ações -->
     <div class="border-t border-gray-100 pt-6 flex flex-col md:flex-row justify-between items-center no-print">
-      <span class="text-xs text-gray-400 font-medium">Padaria Super Bom 24h - Sistema de Caixas</span>
+      <span class="text-xs text-gray-400 font-medium">Padaria Super Pão 24h - Sistema de Caixas</span>
       <div class="mt-4 md:mt-0 flex gap-3">
         <button onclick="window.print()" class="inline-flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md shadow-indigo-100 transition-colors">
           Imprimir Relatório / PDF
