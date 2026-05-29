@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { DenominationRow } from '../components/DenominationRow';
 import { Shift, CashClosingInput, ClosingStatus, UserRole } from '@superbom/shared';
-import { Save, Send, AlertTriangle, ArrowLeft, Loader2, Info } from 'lucide-react';
+import { Save, Send, AlertTriangle, ArrowLeft, Loader2, Info, Sparkles } from 'lucide-react';
 
 export const ClosingForm: React.FC = () => {
   const { user } = useAuth();
@@ -130,6 +130,111 @@ export const ClosingForm: React.FC = () => {
   const totalEntries = Number((totalCash + pixValue + cardTotal).toFixed(2));
   const totalExits = Number((withdrawalValue + adjustmentValue).toFixed(2));
   const totalFinal = Number((totalEntries - totalExits).toFixed(2));
+
+  // Sugestão de Sangria Inteligente
+  const getSangriaSuggestion = () => {
+    const denominations = [
+      { type: 'coin', label: 'Moeda de R$ 0,05', value: 0.05, key: 'c005' },
+      { type: 'coin', label: 'Moeda de R$ 0,10', value: 0.10, key: 'c010' },
+      { type: 'coin', label: 'Moeda de R$ 0,25', value: 0.25, key: 'c025' },
+      { type: 'coin', label: 'Moeda de R$ 0,50', value: 0.50, key: 'c050' },
+      { type: 'coin', label: 'Moeda de R$ 1,00', value: 1.00, key: 'c100' },
+      { type: 'bill', label: 'Cédula de R$ 2,00', value: 2, key: 'b2' },
+      { type: 'bill', label: 'Cédula de R$ 5,00', value: 5, key: 'b5' },
+      { type: 'bill', label: 'Cédula de R$ 10,00', value: 10, key: 'b10' },
+      { type: 'bill', label: 'Cédula de R$ 20,00', value: 20, key: 'b20' },
+      { type: 'bill', label: 'Cédula de R$ 50,00', value: 50, key: 'b50' },
+      { type: 'bill', label: 'Cédula de R$ 100,00', value: 100, key: 'b100' },
+    ] as const;
+
+    if (totalCash <= 100) {
+      const itemsToKeep = denominations
+        .map((d) => {
+          const qty = d.type === 'coin' ? coins[d.key as keyof typeof coins] : bills[d.key as keyof typeof bills];
+          return { label: d.label, qty, value: d.value };
+        })
+        .filter((item) => item.qty > 0);
+
+      return {
+        keepTotal: totalCash,
+        withdrawalTotal: 0,
+        itemsToKeep,
+      };
+    }
+
+    let currentKeepSum = 0;
+    const keepCounts: Record<string, number> = {};
+
+    // Algoritmo guloso
+    for (const denom of denominations) {
+      const available = denom.type === 'coin'
+        ? coins[denom.key as keyof typeof coins]
+        : bills[denom.key as keyof typeof bills];
+
+      if (available === 0) continue;
+
+      const needed = 100 - currentKeepSum;
+      if (needed <= 0) break;
+
+      const maxToTake = Math.floor(needed / denom.value);
+      const taken = Math.min(available, maxToTake);
+
+      if (taken > 0) {
+        keepCounts[denom.key] = taken;
+        currentKeepSum = Number((currentKeepSum + taken * denom.value).toFixed(2));
+      }
+    }
+
+    // Refinamento: se sobrar uma denominação que nos aproxima mais do alvo de R$ 100
+    if (currentKeepSum < 100) {
+      let bestExtraDenom: typeof denominations[number] | null = null;
+      let bestDiff = 100 - currentKeepSum;
+
+      for (const denom of denominations) {
+        const available = denom.type === 'coin'
+          ? coins[denom.key as keyof typeof coins]
+          : bills[denom.key as keyof typeof bills];
+        const kept = keepCounts[denom.key] || 0;
+
+        if (available > kept) {
+          const newSum = currentKeepSum + denom.value;
+          const diff = Math.abs(100 - newSum);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestExtraDenom = denom;
+          }
+        }
+      }
+
+      if (bestExtraDenom) {
+        keepCounts[bestExtraDenom.key] = (keepCounts[bestExtraDenom.key] || 0) + 1;
+        currentKeepSum = Number((currentKeepSum + bestExtraDenom.value).toFixed(2));
+      }
+    }
+
+    const withdrawalTotal = Number((totalCash - currentKeepSum).toFixed(2));
+    const itemsToKeep = denominations
+      .map((d) => ({
+        label: d.label,
+        qty: keepCounts[d.key] || 0,
+        value: d.value,
+      }))
+      .filter((item) => item.qty > 0);
+
+    return {
+      keepTotal: currentKeepSum,
+      withdrawalTotal,
+      itemsToKeep,
+    };
+  };
+
+  const suggestion = getSangriaSuggestion();
+
+  const handleApplySuggestion = () => {
+    setWithdrawalValue(suggestion.withdrawalTotal);
+    setAdjustmentDescription(`Sangria automática de fechamento. Troco reservado em caixa: R$ ${suggestion.keepTotal.toFixed(2)}.`);
+    showToast('Sugestão de sangria aplicada com sucesso!');
+  };
 
   // Helpers de Atualização
   const updateCoin = (key: keyof typeof coins, qty: number) => {
@@ -339,6 +444,81 @@ export const ClosingForm: React.FC = () => {
             <DenominationRow label="R$ 100,00" denomination={100} quantity={bills.b100} onChange={(qty: number) => updateBill('b100', qty)} isBill />
           </div>
         </div>
+
+        {/* Sugestão Inteligente de Sangria */}
+        {totalCash > 0 && (
+          <div className="bg-slate-900 border border-indigo-500/20 rounded-3xl p-5 md:p-6 shadow-xl relative overflow-hidden bg-gradient-to-br from-slate-900 to-indigo-950/20">
+            {/* Efeito luminoso de fundo */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full -mr-10 -mt-10 pointer-events-none" />
+            
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg">
+                <Sparkles size={18} className="animate-pulse" />
+              </div>
+              <h2 className="text-sm font-black text-slate-200 uppercase tracking-wider">
+                Sugestão Inteligente de Sangria
+              </h2>
+              <span className="ml-auto text-[9px] font-black uppercase bg-indigo-600/25 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                Troco Alvo: R$ 100,00
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div className="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-4">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  Troco a Deixar no Caixa
+                </span>
+                <span className="text-xl font-mono font-black text-slate-200">
+                  R$ {suggestion.keepTotal.toFixed(2)}
+                </span>
+                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                  Moedas e notas de menor valor selecionadas para facilitar o troco do próximo turno.
+                </p>
+              </div>
+
+              <div className="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-4">
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block mb-1">
+                  Sangria Sugerida (Retirada)
+                </span>
+                <span className="text-xl font-mono font-black text-indigo-300">
+                  R$ {suggestion.withdrawalTotal.toFixed(2)}
+                </span>
+                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                  Valor excedente a ser retirado da gaveta e enviado aos administradores.
+                </p>
+              </div>
+            </div>
+
+            {suggestion.itemsToKeep.length > 0 && (
+              <div className="mb-5 bg-slate-950/20 border border-slate-800/40 rounded-2xl p-4">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                  Notas e Moedas recomendadas para manter:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {suggestion.itemsToKeep.map((item, idx) => (
+                    <span 
+                      key={idx} 
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-950 border border-slate-800 text-xs font-medium text-slate-300 rounded-lg hover:border-slate-700 transition"
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${item.value < 2 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      <strong className="text-indigo-400 font-bold">{item.qty}x</strong> {item.label.replace('Moeda de ', '').replace('Cédula de ', '')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleApplySuggestion}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 hover:border-indigo-600 font-bold rounded-xl text-xs transition active:scale-[0.98]"
+              >
+                Aplicar Sugestão de Sangria
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Outras Entradas (Pix / Cartão) */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 md:p-6">
