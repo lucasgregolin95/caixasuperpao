@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Remove setas de incremento padrão de inputs numéricos */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4f46e5;
+}
+
+/* Estilo do foco em botões e inputs */
+*:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}

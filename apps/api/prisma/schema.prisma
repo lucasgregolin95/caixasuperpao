@@ -1,0 +1,104 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  role         String         // ADMIN, GERENTE, SUPERVISOR, CAIXA
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  closings     CashClosing[]
+  notifications Notification[]
+  tokens       RefreshToken[]
+  auditLogs    AuditLog[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model CashClosing {
+  id                    String     @id @default(uuid())
+  bakery                String     @default("Super Bom")
+  date                  DateTime
+  shift                 String     // MANHA, TARDE, NOITE
+  cashNumber            Int        // 1 ou 2 (ou mais)
+  status                String     // RASCUNHO, ENVIADO
+  operatorId            String
+  operator              User       @relation(fields: [operatorId], references: [id])
+  notes                 String?
+
+  // Quantidades de Moedas (0.05, 0.10, 0.25, 0.50, 1.00)
+  coins005              Int        @default(0)
+  coins010              Int        @default(0)
+  coins025              Int        @default(0)
+  coins050              Int        @default(0)
+  coins100              Int        @default(0)
+
+  // Quantidades de Notas (2, 5, 10, 20, 50, 100)
+  bills2                Int        @default(0)
+  bills5                Int        @default(0)
+  bills10               Int        @default(0)
+  bills20               Int        @default(0)
+  bills50               Int        @default(0)
+  bills100              Int        @default(0)
+
+  // Outros métodos de Entrada (moedas, notas e totais calculados são decimais)
+  pixValue              Float      @default(0)
+  cardDebit             Float      @default(0)
+  cardCredit            Float      @default(0)
+  cardTotal             Float      @default(0)
+
+  // Saídas/Sangrias/Ajustes
+  withdrawalValue       Float      @default(0)
+  adjustmentValue       Float      @default(0)
+  adjustmentDescription String?
+
+  // Totais (calculados no backend por segurança)
+  totalCoins            Float      @default(0)
+  totalBills            Float      @default(0)
+  totalCash             Float      @default(0)
+  totalEntries          Float      @default(0)
+  totalExits            Float      @default(0)
+  totalFinal            Float      @default(0)
+
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  auditLogs             AuditLog[]
+}
+
+model AuditLog {
+  id          String       @id @default(uuid())
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String       // CREATE, UPDATE, SEND, REOPEN
+  closingId   String?
+  closing     CashClosing? @relation(fields: [closingId], references: [id], onDelete: SetNull)
+  description String
+  details     String?      // JSON armazenado como string para SQLite
+  createdAt   DateTime     @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
