@@ -12,5 +12,8 @@
     "build:web": "npm run build --workspace=apps/web",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
   }
 }
